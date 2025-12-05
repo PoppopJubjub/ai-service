@@ -29,8 +29,10 @@ public class AiMapper {
 
 		return new AiCheckResponse(
 			result.isAbusive(),
-			result.score(),
-			result.labels()
+			result.confidence(),
+			result.category(),
+			result.reason(),
+			result.safetyLabels()
 		);
 	}
 }
