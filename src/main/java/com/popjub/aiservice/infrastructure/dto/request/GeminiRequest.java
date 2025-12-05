@@ -15,5 +15,6 @@ public record GeminiRequest(
 	}
 
 	public record Content(List<Part> parts) {}
+
 	public record Part(String text) {}
 }
