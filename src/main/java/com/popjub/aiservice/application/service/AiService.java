@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.popjub.aiservice.application.dto.command.AiCommand;
 import com.popjub.aiservice.application.dto.result.AiResult;
 import com.popjub.aiservice.domain.entity.Ai;
@@ -13,71 +14,87 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.popjub.aiservice.infrastructure.dto.response.GeminiResponse;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiService {
 
 	private final AiRepository aiRepository;
 	private final GeminiClient geminiClient;
+	private final ObjectMapper objectMapper;
 
 	public AiResult check(AiCommand command) {
-		//호출
-		GeminiResponse geminiRes = geminiClient.requestModeration(command.text());
-		//확인용 원본
-		String raw = geminiClient.requestRaw(command.text());
-		System.out.println("🔥 RAW RESPONSE = " + raw);
-		// Gemini 응답 → GeminiResDto 파싱
-		AiResult result = convertToResult(geminiRes);
+		try {
+			//호출
+			GeminiResponse geminiRes = geminiClient.requestModerationWithPrompt(command.text());
+			//확인용 원본
+			String raw = geminiClient.requestRaw(command.text());
+			log.info("RAW RESPONSE = {}", raw);
+			// Gemini 응답 → GeminiResDto 파싱
+			AiResult result = parseGeminiResponse(geminiRes);
+			// 원본 저장
+			Ai ai = new Ai(
+				command.reviewId(),
+				command.text(),
+				geminiRes.toString()
+			);
+			aiRepository.save(ai);
 
-		Ai ai = new Ai(
-			command.reviewId(),
-			command.text(),
-			geminiRes.toString() // 원본 저장
-		);
-		aiRepository.save(ai);
-
-		return result;
-	}
-
-	private AiResult convertToResult(GeminiResponse res) {
-
-		// 1) candidates.*.safetyRatings
-		if (res.candidates() == null || res.candidates().isEmpty()) {
-			return new AiResult(false, "LOW", List.of());
+			return result;
+		}	catch (Exception e) {
+			log.error("AI 검사 중 오류 발생", e);
+			return AiResult.safe();
+		}
 		}
 
-		// 첫 번째 candidate
-		var candidate = res.candidates().get(0);
+	// Gemini 응답 파싱
+	private AiResult parseGeminiResponse(GeminiResponse response) {
+		try {
+			// 1. 응답에서 텍스트 추출
+			if (response.candidates() == null || response.candidates().isEmpty()) {
+				log.warn("Gemini 응답에 candidates가 없음");
+				return AiResult.safe();
+			}
 
-		List<GeminiResponse.SafetyRating> ratings = candidate.safetyRatings();
+			var candidate = response.candidates().get(0);
+			var content = candidate.content();
 
-		// safetyRatings 도 없으면 LOW 처리
-		if (ratings == null || ratings.isEmpty()) {
-			return new AiResult(false, "LOW", List.of());
+			if (content == null || content.parts() == null || content.parts().isEmpty()) {
+				log.warn("Gemini 응답에 content가 없음");
+				return AiResult.safe();
+			}
+
+			String textResponse = content.parts().get(0).text();
+			log.info("Gemini 텍스트 응답: {}", textResponse);
+
+			// 2. JSON 파싱 (```json ``` 제거)
+			String cleanJson = textResponse
+				.replaceAll("```json", "")
+				.replaceAll("```", "")
+				.trim();
+
+			JsonNode json = objectMapper.readTree(cleanJson);
+
+			// 3. JSON에서 필드 추출
+			boolean isAbusive = json.get("isAbusive").asBoolean();
+			double confidence = json.get("confidence").asDouble();
+			String category = json.get("category").asText();
+			String reason = json.get("reason").asText();
+
+			// 4. SafetyRatings도 함께 수집
+			List<String> safetyLabels = candidate.safetyRatings() != null
+				? candidate.safetyRatings().stream()
+				.map(GeminiResponse.SafetyRating::category)
+				.toList()
+				: List.of();
+
+			return new AiResult(isAbusive, confidence, category, reason, safetyLabels);
+
+		} catch (Exception e) {
+			log.error("Gemini 응답 파싱 실패", e);
+			return AiResult.safe();
 		}
-
-		// HIGH 포함 여부로 abusive 판단
-		boolean abusive = ratings.stream()
-			.anyMatch(r -> "HIGH".equalsIgnoreCase(r.probability()));
-
-		// 카테고리 목록
-		List<String> labels = ratings.stream()
-			.map(GeminiResponse.SafetyRating::category)
-			.toList();
-
-		// HIGH > MEDIUM > LOW 순서로 가장 높은 위험도 선택
-		String score = ratings.stream()
-			.map(GeminiResponse.SafetyRating::probability)
-			.sorted((a, b) -> List.of("HIGH", "MEDIUM", "LOW")
-				.indexOf(a) - List.of("HIGH", "MEDIUM", "LOW").indexOf(b))
-			.findFirst()
-			.orElse("LOW");
-
-		return new AiResult(
-			abusive,
-			score,
-			labels
-		);
 	}
 }

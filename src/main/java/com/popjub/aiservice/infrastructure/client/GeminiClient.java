@@ -36,6 +36,20 @@ public class GeminiClient {
 			.block();
 	}
 
+	public GeminiResponse requestModerationWithPrompt(String text) {
+		GeminiRequest body = GeminiRequest.forModerationCheck(text);
+
+		return geminiWebClient.post()
+			.uri(uriBuilder -> uriBuilder
+				.path(geminiUrl)
+				.queryParam("key", apiKey)
+				.build())
+			.bodyValue(body)
+			.retrieve()
+			.bodyToMono(GeminiResponse.class)
+			.block();
+	}
+
 	public String requestRaw(String text) {
 		GeminiRequest body = GeminiRequest.from(text);
 
