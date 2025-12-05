@@ -1,4 +1,4 @@
-package com.popjub.ai_service;
+package com.popjub.aiservice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

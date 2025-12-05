@@ -1,0 +1,9 @@
+server:
+  port: 18086
+
+spring:
+  application:
+    name: ai-service
+
+  profiles:
+    active: dev
