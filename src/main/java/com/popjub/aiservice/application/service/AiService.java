@@ -43,10 +43,10 @@ public class AiService {
 			aiRepository.save(ai);
 
 			return result;
-		}	catch (Exception e) {
+		}catch (Exception e) {
 			log.error("AI 검사 중 오류 발생", e);
 			return AiResult.safe();
-		}
+			}
 		}
 
 	// Gemini 응답 파싱

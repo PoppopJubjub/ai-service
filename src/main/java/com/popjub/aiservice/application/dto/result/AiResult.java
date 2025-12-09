@@ -4,9 +4,9 @@ import java.util.List;
 
 public record AiResult(
 	boolean isAbusive,
-	double  confidence,
-	String category,
-	String reason,
+	double  confidence, //신뢰도
+	String category, //카테고리
+	String reason,	// 이유
 	List<String> safetyLabels
 ) {
 	public static AiResult safe() {
