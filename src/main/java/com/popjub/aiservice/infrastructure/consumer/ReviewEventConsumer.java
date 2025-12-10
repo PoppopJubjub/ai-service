@@ -8,6 +8,8 @@ import com.popjub.aiservice.application.dto.result.AiResult;
 import com.popjub.aiservice.application.event.ReviewCreateEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.popjub.aiservice.application.service.AiService;
+import com.popjub.aiservice.exception.AiCustomException;
+import com.popjub.aiservice.exception.AiErrorCode;
 import com.popjub.aiservice.infrastructure.client.ReviewClient;
 
 import lombok.RequiredArgsConstructor;
@@ -26,7 +28,10 @@ public class ReviewEventConsumer {
 	public void consume(String message) {
 		try {
 			ReviewCreateEvent event = objectMapper.readValue(message, ReviewCreateEvent.class);
-			log.info("받은 리뷰 이벤트: reviewId={}, content={}", event.getReviewId(), event.getContent());
+
+			if (event.getReviewId() == null || event.getContent() == null) {
+				throw new AiCustomException(AiErrorCode.INVALID_REQUEST);
+			}
 
 			AiCommand command = new AiCommand(event.getReviewId(), event.getContent());
 			AiResult result = aiService.check(command);
@@ -34,15 +39,14 @@ public class ReviewEventConsumer {
 			boolean isBlind = result.isAbusive() && result.confidence() >= 0.80;
 
 			if (isBlind) {
-				log.info("리뷰 {} → BLIND 처리 실행", event.getReviewId());
 				reviewClient.updateBlind(event.getReviewId(), true);
-			} else {
-				log.info("리뷰 {} → 정상(BLIND 아님)", event.getReviewId());
 			}
 			// TODO: DB 저장 예정
 
+		} catch (AiCustomException e) {
+			// swallow: 재시도 금지, 메시지 정상 처리로 마무리
 		} catch (Exception e) {
-			log.error("Kafka message parsing error", e);
+			throw new AiCustomException(AiErrorCode.KAFKA_EVENT_PARSE_FAIL);
 		}
 	}
 }
