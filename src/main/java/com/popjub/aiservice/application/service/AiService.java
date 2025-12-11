@@ -34,6 +34,8 @@ public class AiService {
 		try {
 			//호출
 			GeminiResponse geminiRes = geminiClient.requestModerationWithPrompt(command.text());
+			// 로그로 응답 확인
+			log.info("[AI] GeminiResponse(JSON) = {}", objectMapper.writeValueAsString(geminiRes));
 			// Gemini 응답 → GeminiResDto 파싱
 			AiResult result = parseGeminiResponse(geminiRes);
 
