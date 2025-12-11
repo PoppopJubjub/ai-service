@@ -24,7 +24,7 @@ ext {
 }
 
 dependencies {
-	implementation 'com.github.PoppopJubjub:common:1.0.3'
+	implementation 'com.github.PoppopJubjub:common:1.1.4'
 
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
