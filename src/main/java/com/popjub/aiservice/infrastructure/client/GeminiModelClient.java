@@ -59,7 +59,16 @@ public class GeminiModelClient implements ModelClient {
 
 	private AiResult toAiResult(GeminiResponse response) {
 		try {
+			if (response.candidates() == null || response.candidates().isEmpty()) {
+				throw new AiCustomException(GEMINI_PARSE_FAIL);
+			}
+
 			var candidate = response.candidates().get(0);
+
+			if (candidate.content() == null || candidate.content().parts() == null || candidate.content().parts().isEmpty()) {
+				throw new AiCustomException(GEMINI_PARSE_FAIL);
+			}
+
 			var part = candidate.content().parts().get(0).text();
 
 			String cleanJson = part
