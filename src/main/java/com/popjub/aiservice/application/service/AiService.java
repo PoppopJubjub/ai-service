@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.popjub.aiservice.application.dto.command.AiCommand;
 import com.popjub.aiservice.application.dto.result.AiResult;
@@ -34,7 +35,13 @@ public class AiService {
 			// Gemini 응답 → GeminiResDto 파싱
 			AiResult result = modelClient.check(command);
 
-			String rawResult = objectMapper.writeValueAsString(result);
+			String rawResult;
+
+			try {
+				rawResult = objectMapper.writeValueAsString(result);
+			} catch (JsonProcessingException e) {
+				throw new AiCustomException(AiErrorCode.GEMINI_PARSE_FAIL);
+			}
 
 			Ai ai = new Ai(
 				command.reviewId(),
