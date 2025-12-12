@@ -2,10 +2,11 @@ package com.popjub.aiservice.application.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
+import java.util.Map;
 import com.popjub.aiservice.application.dto.command.AiCommand;
 import com.popjub.aiservice.application.dto.result.AiResult;
 import com.popjub.aiservice.domain.entity.Ai;
@@ -24,24 +25,25 @@ import lombok.extern.slf4j.Slf4j;
 public class AiService {
 
 	private final AiRepository aiRepository;
-	private final ModelClient modelClient;
+	private final Map<String, ModelClient> modelClients;
 	private final ObjectMapper objectMapper;
+
+	@Value("${ai.model}")
+	private String activeModel;
 
 	public AiResult check(AiCommand command) {
 
 		validateCommand(command);
 
+		ModelClient modelClient = modelClients.get(activeModel);
+		if (modelClient == null) {
+			throw new AiCustomException(AiErrorCode.UNSUPPORTED_MODEL);
+		}
+
 		try {
 			// Gemini 응답 → GeminiResDto 파싱
 			AiResult result = modelClient.check(command);
-
-			String rawResult;
-
-			try {
-				rawResult = objectMapper.writeValueAsString(result);
-			} catch (JsonProcessingException e) {
-				throw new AiCustomException(AiErrorCode.GEMINI_PARSE_FAIL);
-			}
+			String rawResult = objectMapper.writeValueAsString(result);
 
 			Ai ai = new Ai(
 				command.reviewId(),

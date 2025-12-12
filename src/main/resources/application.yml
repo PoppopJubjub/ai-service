@@ -41,6 +41,9 @@ eureka:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
 
+ai:
+  model: gemini
+
 gemini:
-  url: /v1beta/models/gemini-2.5-flash:generateContent
+  url: /v1beta/models/gemini-2.5-flash-lite:generateContent
   api-key: ${GEMINI_API_KEY}

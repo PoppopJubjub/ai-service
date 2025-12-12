@@ -25,6 +25,7 @@ public enum AiErrorCode implements BaseErrorCode {
 	GEMINI_PARSE_FAIL("502:Gemini 응답 파싱 실패", HttpStatus.BAD_GATEWAY),
 	MODEL_RESPONSE_FAIL("502:모델 응답 반환 실패", HttpStatus.BAD_GATEWAY),
 	GEMINI_API_FAIL("API 요청 실패", HttpStatus.BAD_GATEWAY),
+	UNSUPPORTED_MODEL("지원하지 않는 AI 모델입니다.", HttpStatus.BAD_REQUEST),
 
 	KAFKA_EVENT_PARSE_FAIL("400:Kafka 메시지 파싱 실패", HttpStatus.BAD_REQUEST);
 

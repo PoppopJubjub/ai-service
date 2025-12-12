@@ -4,6 +4,7 @@ import static com.popjub.aiservice.exception.AiErrorCode.*;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -20,9 +21,9 @@ import com.popjub.aiservice.exception.AiCustomException;
 import com.popjub.aiservice.infrastructure.dto.request.GeminiRequest;
 import com.popjub.aiservice.infrastructure.dto.response.GeminiResponse;
 
-@Component
 @RequiredArgsConstructor
 @Slf4j
+@Component("gemini")
 public class GeminiModelClient implements ModelClient {
 
 	private final WebClient geminiWebClient;
