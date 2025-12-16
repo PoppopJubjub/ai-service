@@ -2,18 +2,19 @@ package com.popjub.aiservice.application.service;
 
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Map;
 import com.popjub.aiservice.application.dto.command.AiCommand;
 import com.popjub.aiservice.application.dto.result.AiResult;
 import com.popjub.aiservice.domain.entity.Ai;
 import com.popjub.aiservice.domain.repository.AiRepository;
 import com.popjub.aiservice.exception.AiCustomException;
 import com.popjub.aiservice.exception.AiErrorCode;
-import com.popjub.aiservice.infrastructure.client.GeminiClient;
+import com.popjub.aiservice.application.port.ModelClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.popjub.aiservice.infrastructure.dto.response.GeminiResponse;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,25 +25,30 @@ import lombok.extern.slf4j.Slf4j;
 public class AiService {
 
 	private final AiRepository aiRepository;
-	private final GeminiClient geminiClient;
+	private final Map<String, ModelClient> modelClients;
 	private final ObjectMapper objectMapper;
+
+	@Value("${ai.model}")
+	private String activeModel;
 
 	public AiResult check(AiCommand command) {
 
 		validateCommand(command);
 
+		ModelClient modelClient = modelClients.get(activeModel);
+		if (modelClient == null) {
+			throw new AiCustomException(AiErrorCode.UNSUPPORTED_MODEL);
+		}
+
 		try {
-			//호출
-			GeminiResponse geminiRes = geminiClient.requestModerationWithPrompt(command.text());
-			// 로그로 응답 확인
-			log.info("[AI] GeminiResponse(JSON) = {}", objectMapper.writeValueAsString(geminiRes));
 			// Gemini 응답 → GeminiResDto 파싱
-			AiResult result = parseGeminiResponse(geminiRes);
+			AiResult result = modelClient.check(command);
+			String rawResult = objectMapper.writeValueAsString(result);
 
 			Ai ai = new Ai(
 				command.reviewId(),
 				command.text(),
-				geminiRes.toString()
+				rawResult
 			);
 			aiRepository.save(ai);
 
@@ -61,50 +67,6 @@ public class AiService {
 		}
 		if (command.text() == null || command.text().isBlank()) {
 			throw new AiCustomException(AiErrorCode.EMPTY_TEXT);
-		}
-	}
-
-	// Gemini 응답 파싱
-	private AiResult parseGeminiResponse(GeminiResponse response) {
-
-		if (response.candidates() == null || response.candidates().isEmpty()) {
-			throw new AiCustomException(AiErrorCode.GEMINI_CANDIDATE_EMPTY);
-		}
-
-		var candidate = response.candidates().get(0);
-
-		if (candidate.content() == null ||
-			candidate.content().parts() == null ||
-			candidate.content().parts().isEmpty()) {
-
-			throw new AiCustomException(AiErrorCode.GEMINI_CONTENT_EMPTY);
-		}
-
-		try {
-			String textResponse = candidate.content().parts().get(0).text();
-
-			String cleanJson = textResponse
-				.replaceAll("```json", "")
-				.replaceAll("```", "")
-				.trim();
-
-			JsonNode json = objectMapper.readTree(cleanJson);
-
-			boolean isAbusive = json.get("isAbusive").asBoolean();
-			double confidence = json.get("confidence").asDouble();
-			String category = json.get("category").asText();
-			String reason = json.get("reason").asText();
-
-			List<String> safetyLabels = candidate.safetyRatings() != null
-				? candidate.safetyRatings().stream()
-				.map(GeminiResponse.SafetyRating::category)
-				.toList()
-				: List.of();
-
-			return new AiResult(isAbusive, confidence, category, reason, safetyLabels);
-
-		} catch (Exception e) {
-			throw new AiCustomException(AiErrorCode.GEMINI_PARSE_FAIL);
 		}
 	}
 }
