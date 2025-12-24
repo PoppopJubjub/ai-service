@@ -35,3 +35,10 @@ eureka:
       defaultZone: http://${EUREKA_HOST}:18080/eureka/
     register-with-eureka: true
     fetch-registry: true
+
+ai:
+  model: gemini
+
+gemini:
+  url: /v1beta/models/gemini-2.5-flash-lite:generateContent
+  api-key: ${GEMINI_API_KEY}
