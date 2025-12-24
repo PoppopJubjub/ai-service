@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+    username: ${POSTGRES_USER}
+    password: ${POSTGRES_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        show_sql: false
+        format_sql: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  kafka:
+    bootstrap-servers:
+      - b-1.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+      - b-4.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+      - b-2.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: AWS_MSK_IAM
+      sasl.jaas.config: software.amazon.msk.auth.iam.IAMLoginModule required;
+      sasl.client.callback.handler.class: software.amazon.msk.auth.iam.IAMClientCallbackHandler
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://${EUREKA_HOST}:18080/eureka/
+    register-with-eureka: true
+    fetch-registry: true
