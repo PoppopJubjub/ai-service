@@ -1,3 +1,6 @@
+server:
+  port: 8080
+
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
@@ -14,12 +17,21 @@ spring:
         format_sql: false
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
+  kafka:
+    bootstrap-servers:
+      - b-1.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+      - b-4.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+      - b-2.popjubkafkaprod.8w3qcn.c2.kafka.ap-northeast-2.amazonaws.com:9098
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: AWS_MSK_IAM
+      sasl.jaas.config: software.amazon.msk.auth.iam.IAMLoginModule required;
+      sasl.client.callback.handler.class: software.amazon.msk.auth.iam.IAMClientCallbackHandler
+
+
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka-server:18080/eureka/
+      defaultZone: http://${EUREKA_HOST}:18080/eureka/
     register-with-eureka: true
     fetch-registry: true
-
-server:
-  port: 8080

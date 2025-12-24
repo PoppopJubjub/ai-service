@@ -1,4 +1,13 @@
+server:
+  port: 18086
+
 spring:
+  application:
+    name: ai-service
+
+  profiles:
+    active: dev
+
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:ai_db}
@@ -31,3 +40,10 @@ eureka:
   instance:
     prefer-ip-address: true
     instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+
+ai:
+  model: gemini
+
+gemini:
+  url: /v1beta/models/gemini-2.5-flash-lite:generateContent
+  api-key: ${GEMINI_API_KEY}

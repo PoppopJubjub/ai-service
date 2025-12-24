@@ -1,49 +1,6 @@
-server:
-  port: 18086
-
 spring:
   application:
     name: ai-service
 
   profiles:
-    active: dev
-
-  datasource:
-    driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:ai_db}
-    username: ${POSTGRES_USER:root}
-    password: ${POSTGRES_PASSWORD:root}
-
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        show_sql: true
-        format_sql: true
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
-
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: ai-service-group
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-eureka:
-  client:
-    enabled: true
-    service-url:
-      defaultZone: http://localhost:18080/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    prefer-ip-address: true
-    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
-
-ai:
-  model: gemini
-
-gemini:
-  url: /v1beta/models/gemini-2.5-flash-lite:generateContent
-  api-key: ${GEMINI_API_KEY}
+    active: ${SPRING_PROFILES_ACTIVE:dev}
