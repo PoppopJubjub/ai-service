@@ -38,6 +38,12 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	//kafka
 	implementation 'org.springframework.kafka:spring-kafka'
+	implementation 'software.amazon.msk:aws-msk-iam-auth:2.1.1'
+	//aws
+	implementation platform("software.amazon.awssdk:bom:2.25.62")
+	implementation 'software.amazon.awssdk:s3'
+	implementation 'software.amazon.awssdk:auth'
+
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
 }
